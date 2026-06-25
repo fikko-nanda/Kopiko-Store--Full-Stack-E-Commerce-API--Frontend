@@ -1,4 +1,5 @@
 # shop/views.py
+from django.shortcuts import render 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -6,7 +7,11 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Product, Cart, OrderItem, Order # Pastikan Order sudah di-import
 from .serializers import ProductSerializer, CartSerializer, OrderSerializer # Pastikan OrderSerializer di-import
 
+# shop/views.py
 
+
+def index_view(request):
+    return render(request, 'shop/index.html')
 
 @api_view(['GET'])
 def product_list(request):

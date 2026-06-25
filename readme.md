@@ -1,51 +1,51 @@
-# 🛒 E-Commerce Backend API
+# 🛒 Kopiko Store - Full-Stack E-Commerce API & Frontend
 
-Sebuah RESTful API untuk platform e-commerce yang dibangun menggunakan **Python**, **Django**, dan **Django REST Framework (DRF)**. Proyek ini mengimplementasikan relasi database yang bersih, serialisasi data (serialization), validasi stok secara real-time, otomatisasi pencatatan transaksi, serta kustomisasi panel admin untuk monitoring data secara visual.
+Proyek ini adalah aplikasi **Full-Stack E-Commerce** mini yang mengintegrasikan Backend berbasis **Python (Django & Django REST Framework)** dengan Frontend dinamis menggunakan **HTML5, Tailwind CSS, dan Vanilla JavaScript**. 
 
-Proyek ini dikembangkan dengan standar arsitektur profesional (MVT/MVC pattern) yang dirancang khusus untuk mendemonstrasikan kompetensi inti logika bisnis dan backend engineering untuk persiapan magang (Software Engineering Internship).
-
----
-
-## ✨ Fitur & Fungsionalitas Utama
-
-### 1. Arsitektur Database & ORM
-* **Skema Relasional:** Implementasi relasi database yang bersih yang menghubungkan entitas `User`, `Product`, `Cart`, `OrderItem`, dan `Order`.
-* **Penguncian Data Transaksi:** Menggunakan relasi `OneToOneField` dari `Cart` yang sudah selesai ke sebuah `Order` (Nota/Invoice) untuk mengunci riwayat snapshot belanjaan secara permanen.
-
-### 2. Logika Bisnis & API Endpoints
-* **Validasi Stok Real-Time:** Mencegah pembelian berlebih dengan melakukan pengecekan ketat pada nilai `product.stock` sebelum barang masuk ke keranjang maupun saat checkout.
-* **Buku Besar Stok Otomatis:** Memotong jumlah stok produk di database secara permanen begitu transaksi checkout berhasil dilakukan.
-* **State Machine Berbasis Sesi:** Secara otomatis mengosongkan keranjang aktif lama dan membuatkan `Cart` aktif baru (`ordered=False`) untuk pengguna segera setelah checkout berhasil, sehingga pengguna bisa langsung belanja kembali.
-
-### 3. Serialisasi & Keamanan API
-* **Nested Serialization:** Menyajikan representasi data yang kaya dengan menyarangkan (nesting) struktur produk dan item di dalam respon JSON nota riwayat transaksi.
-* **Kontrol Akses Endpoint:** Mengamankan integritas data dengan membatasi akses endpoint manajemen keranjang dan checkout hanya untuk user yang sudah login (`IsAuthenticated`).
+Aplikasi ini mengimplementasikan siklus data lengkap (*End-to-End*) mulai dari manajemen database produk, sistem keranjang belanja berbasis sesi, validasi stok *real-time*, hingga otomatisasi penerbitan nota transaksi (invoice/order history). Desain arsitekturnya mengikuti standar industri (separation of concerns) yang sangat cocok dijadikan portofolio berbobot untuk lowongan magang *Software Engineer* atau *Full-Stack Developer*.
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Fitur Utama Aplikasi
 
-* **Bahasa Pemrograman:** Python
-* **Framework:** Django
-* **API Toolkit:** Django REST Framework (DRF)
-* **Database:** SQLite (Default bawaan / Mudah dimigrasikan ke PostgreSQL)
+### 1. Robust Backend Architecture (Django & DRF)
+* **Relational Schema & Dynamic Locking:** Menggunakan ORM Django untuk memetakan entitas `User`, `Product`, `Cart`, `OrderItem`, dan `Order`. Melalui relasi `OneToOneField`, keranjang belanja yang sukses di-checkout akan langsung "dikunci" menjadi nota transaksi permanen.
+* **State Machine & Auto-Reset:** Begitu proses checkout selesai, status keranjang lama berubah menjadi `ordered=True` dan sistem backend secara otomatis membuatkan keranjang aktif baru yang kosong untuk sesi belanja berikutnya.
+* **Defensive Stock Ledger:** Validasi kuantitas produk secara ketat. Jika user memesan melebihi stok yang tersedia, backend akan menolak request transaksi dan memberikan respon error demi menjaga konsistensi data.
+
+### 2. Interactive Reactive Frontend (Tailwind & Vanilla JS)
+* **Single Page Simulation:** Antarmuka katalog produk dan keranjang belanja dimuat secara dinamis dalam satu halaman menggunakan fungsi `fetch()` asynchronous JavaScript tanpa perlu *reload* halaman.
+* **Real-time Inventory Synchronization:** Sinkronisasi data pintar yang mencocokkan ID produk dari API keranjang dengan katalog utama untuk menampilkan detail nama produk, kalkulasi sub-total, dan total harga secara akurat (mencegah error data `undefined` atau `NaN`).
+* **CSRF Security Layer:** Mengamankan setiap mutasi data (`POST` request) saat tambah keranjang dan checkout dengan menyuntikkan token keamanan *Cross-Site Request Forgery* (CSRF) bawaan Django.
 
 ---
 
-## 📂 Struktur Proyek
+## 🛠️ Tech Stack & Spesifikasi
+
+* **Backend:** Python & Django
+* **API Engine:** Django REST Framework (DRF)
+* **Frontend:** HTML5, Tailwind CSS (via Online Utility Engine), Vanilla JavaScript (ES6+ Asynchronous Fetch)
+* **Database:** SQLite (Relasional lokal)
+
+---
+
+## 📂 Struktur Direktori Proyek
 
 ```text
 ecommerce_backend/
 │
 ├── core/
-│   ├── settings.py          # Pengaturan & konfigurasi pusat proyek
-│   └── urls.py              # Definisi rute URL utama
+│   ├── settings.py          # Konfigurasi utama & aplikasi terdaftar (INSTALLED_APPS)
+│   └── urls.py              # Routing utama (menghubungkan API dan halaman utama)
 │
 ├── shop/
-│   ├── admin.py             # Kustomisasi visual panel admin Django
-│   ├── models.py            # Skema dan relasi database ORM
-│   ├── serializers.py       # Skema konversi data ke format JSON
-│   ├── urls.py              # Definisi rute API khusus aplikasi shop
-│   └── views.py             # Logika bisnis utama penanganan request (API Views)
+│   ├── templates/
+│   │   └── shop/
+│   │       └── index.html   # FILE UTAMA FRONTEND (HTML + JS Fetch)
+│   ├── admin.py             # Kustomisasi visual list_display panel admin Django
+│   ├── models.py            # Skema tabel database relasional (ORM)
+│   ├── serializers.py       # Serializer objek ke format JSON array
+│   ├── urls.py              # Endpoint lokal aplikasi (/products/, /cart/, dll)
+│   └── views.py             # Controller logika bisnis & fungsi render template
 │
-└── manage.py                # Manager tugas administratif Django
+└── manage.py                # Django administrative task manager

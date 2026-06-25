@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kopiko Store - Frontend</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <nav class="bg-red-700 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-wide">☕ Kopiko Store</h1>
+            <div class="space-x-4">
+                <a href="#produk" class="hover:underline">Produk</a>
+                <a href="#keranjang" class="hover:underline font-semibold text-yellow-300">Keranjang (0)</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <section class="md:col-span-2">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800" id="produk">Katalog Produk</h2>
+            <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <p class="text-gray-500">Sedang memuat produk...</p>
+            </div>
+        </section>
+
+        <section class="bg-white p-6 rounded-lg shadow-md h-fit">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800" id="keranjang">Keranjang Belanja</h2>
+            <div id="cart-content">
+                <p class="text-gray-500">Memuat keranjang...</p>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Fungsi untuk mengambil data produk dari API Backend Django kamu
+        async function loadProducts() {
+            try {
+                const response = await fetch('/api/products/');
+                const products = await response.json();
+                
+                const productListDiv = document.getElementById('product-list');
+                productListDiv.innerHTML = ''; // Kosongkan text loading
+                
+                products.forEach(product => {
+                    productListDiv.innerHTML += `
+                        <div class="bg-white p-4 rounded-lg shadow hover:shadow-md transition">
+                            <h3 class="text-lg font-bold text-gray-700">${product.name}</h3>
+                            <p class="text-gray-500 text-sm my-1">${product.description || 'Tidak ada deskripsi'}</p>
+                            <div class="mt-4 flex justify-between items-center">
+                                <span class="text-red-700 font-bold">Rp ${parseFloat(product.price).toLocaleString('id-ID')}</span>
+                                <span class="text-xs text-gray-400">Stok: ${product.stock}</span>
+                            </div>
+                            <button onclick="addToCart(${product.id})" class="mt-3 w-full bg-red-600 text-white py-1.5 rounded hover:bg-red-700 font-medium transition text-sm">
+                                + Tambah ke Keranjang
+                            </button>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Gagal memuat produk:", error);
+            }
+        }
+
+        // Fungsi untuk menambahkan produk ke keranjang belanja via POST
+        async function addToCart(productId) {
+            try {
+                const response = await fetch('/api/cart/add/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') // Keamanan Django
+                    },
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: 1
+                    })
+                });
+                
+                if (response.ok) {
+                    alert("Produk berhasil ditambahkan!");
+                    loadCart(); // Refresh tampilan keranjang
+                } else {
+                    const errorData = await response.json();
+                    alert("Gagal: " + (errorData.error || "Terjadi kesalahan"));
+                }
+            } catch (error) {
+                console.error("Error menambah ke keranjang:", error);
+            }
+        }
+
+        // Fungsi untuk memuat data keranjang belanja
+        async function loadCart() {
+            try {
+                const prodResponse = await fetch('/api/products/');
+                const allProducts = await prodResponse.json();
+
+                const response = await fetch('/api/cart/');
+                if (!response.ok) {
+                    document.getElementById('cart-content').innerHTML = `
+                        <p class="text-gray-500 text-sm text-center py-4">Silakan login atau buat keranjang terlebih dahulu.</p>
+                    `;
+                    return;
+                }
+                
+                const cartData = await response.json();
+                const cartContentDiv = document.getElementById('cart-content');
+                const navCartLink = document.querySelector('a[href="#keranjang"]');
+                
+                if (!cartData.items || cartData.items.length === 0) {
+                    cartContentDiv.innerHTML = '<p class="text-gray-500 text-sm">Keranjang kamu kosong.</p>';
+                    navCartLink.innerText = 'Keranjang (0)';
+                    return;
+                }
+                
+                let totalItems = 0;
+                let totalPrice = 0;
+                
+                cartContentDiv.innerHTML = '<div class="space-y-3 mb-4"></div>';
+                const itemsListDiv = cartContentDiv.querySelector('.space-y-3');
+                
+                cartData.items.forEach(item => {
+                    const targetId = item.product && typeof item.product === 'object' ? item.product.id : (item.product || item.product_id);
+                    const originalProduct = allProducts.find(p => p.id === targetId);
+
+                    const prodName = originalProduct ? originalProduct.name : "Produk tidak diketahui";
+                    const prodPrice = originalProduct ? parseFloat(originalProduct.price) : 0;
+                    const quantity = parseInt(item.quantity || 1);
+                    
+                    totalItems += quantity;
+                    totalPrice += prodPrice * quantity;
+                    
+                    itemsListDiv.innerHTML += `
+                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                            <div>
+                                <h4 class="font-medium text-gray-800 text-sm">${prodName}</h4>
+                                <p class="text-gray-400 text-xs">${quantity} x Rp ${prodPrice.toLocaleString('id-ID')}</p>
+                            </div>
+                            <span class="font-bold text-gray-700 text-sm">Rp ${(prodPrice * quantity).toLocaleString('id-ID')}</span>
+                        </div>
+                    `;
+                });
+                
+                navCartLink.innerText = `Keranjang (${totalItems})`;
+                
+                cartContentDiv.innerHTML += `
+                    <div class="border-t pt-3 mt-3">
+                        <div class="flex justify-between font-bold text-gray-800 mb-4">
+                            <span>Total Harga:</span>
+                            <span class="text-red-700">Rp ${totalPrice.toLocaleString('id-ID')}</span>
+                        </div>
+                        <button onclick="processCheckout()" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold transition shadow">
+                            💳 Checkout Sekarang
+                        </button>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error("Gagal memuat keranjang:", error);
+            }
+        }
+
+        // Fungsi untuk memproses Checkout Nota Transaksi
+        async function processCheckout() {
+            if (!confirm("Apakah kamu yakin ingin memproses checkout belanjaan ini?")) return;
+            
+            try {
+                const response = await fetch('/api/cart/checkout/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert(`🎉 Checkout Sukses!\nNota ID: #${result.nota_id}\nTotal Bayar: Rp ${parseFloat(result.total_pembayaran).toLocaleString('id-ID')}`);
+                    loadProducts(); 
+                    loadCart();     
+                } else {
+                    alert("Gagal Checkout: " + (result.error || "Terjadi kesalahan"));
+                }
+            } catch (error) {
+                console.error("Error saat checkout:", error);
+            }
+        }
+
+        // Helper untuk mendapatkan token keamanan Django (CSRF)
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Jalankan fungsi saat halaman pertama kali dibuka
+        loadProducts();
+        loadCart();
+    </script>
+</body>
+</html>

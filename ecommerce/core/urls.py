@@ -17,9 +17,10 @@ Including another URLconf
 # core/urls.py
 from django.contrib import admin
 from django.urls import path, include 
+from shop import views as shop_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('shop.urls')), 
-    
+    path('', shop_views.index_view, name='index')
 ]
